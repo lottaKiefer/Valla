@@ -202,7 +202,7 @@ def main():
     parser = argparse.ArgumentParser(description='Get args for SiameseBert Authorship Attribution Evaluation')
 
     parser.add_argument('--wandb_project', type=str, default='test')
-    parser.add_argument('--model_path', type=str, default='/home/lotta_kiefer/alias_share/Valla/bert-base-cased-german')
+    parser.add_argument('--model_path', type=str, default='bert-base-cased-german')
     parser.add_argument('--train_path', type=str)
     parser.add_argument('--test_path', type=str)
     parser.add_argument('--output_path', type=str, default='SiameseBert_Twitter')
@@ -212,7 +212,7 @@ def main():
                              'warmupcosine, warmupcosinenewwithhardrestarts')
     parser.add_argument('--warmup_steps', type=int, default=0)
     parser.add_argument('--device', type=str, default='cuda') #cuda
-    parser.add_argument('--batch_size', type=int, default=16) #default=2) Lotta: try making it better
+    parser.add_argument('--batch_size', type=int, default=16) #default=2) 
     parser.add_argument('--eval_batch_size', type=int, default=2)
     parser.add_argument('--which_loss_fn', type=str, default='ModifiedContrastiveLoss')
     parser.add_argument('--evaluation_steps', type=int, default=0)
@@ -292,7 +292,7 @@ def main():
         else:
             model = SentenceTransformer(model_name_or_path=args.model_path,
                                         device=args.device)  # , Dropout(args.dropout)],
-            model.add_module("normalize", Normalize()) #Lotta: try avoiding embedding collaps from in and cross domain
+            model.add_module("normalize", Normalize()) # try avoiding embedding collaps from in and cross domain
 
         logging.debug('model info:')
         logging.debug(model)
@@ -323,7 +323,7 @@ def main():
         #     kernel_fn = lambda x: -x
         else:
             #kernel_fn = lambda x: -x
-            kernel_fn = lambda x: 1 / (1+x) #Lotta: otherwise zero positives!!?
+            kernel_fn = lambda x: 1 / (1+x) #otherwise zero positives
 
         post_eval_callable = None
         if args.true_hard_negatives:
@@ -393,7 +393,7 @@ def main():
                   output_path=os.path.join(args.output_path, run_name),
                   evaluator=evaluator,
                   evaluation_steps=args.evaluation_steps,
-                  optimizer_params={'lr': args.lr, 'eps': args.eps}) #Lotta: something about transformer version, 'correct_bias': args.correct_bias},)
+                  optimizer_params={'lr': args.lr, 'eps': args.eps}) #something about transformer version, 'correct_bias': args.correct_bias},)
 
         logging.info('finished')
 

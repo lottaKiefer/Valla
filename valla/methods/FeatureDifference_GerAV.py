@@ -270,7 +270,7 @@ def prepare_entry(text, mode="accurate", tokenizer='treebank'):
         pos_chunks, subtree_expansions = pos_tag_chunk(tagger_output, get_nltk_pos_tag_based_regex_chunker())
     elif mode == 'accurate':
         #tagger_output = perceptron_tagger.tag(tokens)
-        #Lotta: for German
+        #for German
         doc = nlp(" ".join(tokens))
         tagger_output = [(token.text, token.tag_) for token in doc]
         pos_tags = [t[1] for t in tagger_output]
@@ -412,12 +412,14 @@ class CustomTfIdfTransformer(BaseEstimator, TransformerMixin):
 
     def fit(self, x, y=None):
         self.vectorizer.fit(x, y)
-        #self.vectorizer.fit([entry[self.key] for entry in x], y) Lotta: expects dict but only give strings
+        #self.vectorizer.fit([entry[self.key] for entry in x], y) 
+        # expects dict but only give strings
         return self
 
     def transform(self, x):
         return self.vectorizer.transform(x)
-        #return self.vectorizer.transform([entry[self.key] for entry in x]) Lotta: expects dict but only have strings
+        #return self.vectorizer.transform([entry[self.key] for entry in x]) 
+        # expects dict but only have strings
 
     def get_feature_names_out(self, input_features=None):
         return self.vectorizer.get_feature_names_out(input_features)
@@ -874,7 +876,7 @@ def main(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
-        description='AdHominem - Siamese Network for Authorship Verification')  # Lotta: this should not be adhominem?
+        description='AdHominem - Siamese Network for Authorship Verification') 
     parser.add_argument('--train_path', type=str)
     parser.add_argument('--test_path', type=str)
     parser.add_argument('--out_path', type=str)

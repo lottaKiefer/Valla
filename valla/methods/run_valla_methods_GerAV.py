@@ -2,11 +2,11 @@ import os
 import subprocess
 
 NEW_ROOT = "reddit"
-TRAIN_NGRAM =  "/home/lotta_kiefer/alias_share/Valla/valla/methods/FeatureDifferenceGerman.py"
-TRAIN_PPM = "/home/lotta_kiefer/alias_share/Valla/valla/methods/PPM_AV_GerAV.py"
-TRAIN_ADH = "/home/lotta_kiefer/alias_share/Valla/valla/methods/torched_AdHominem_GerAV.py"
-TRAIN_SBERT = "/home/lotta_kiefer/alias_share/Valla/valla/methods/SiameseBert_GerAV.py"
-OUT = "/home/lotta_kiefer/alias_share/valla/results"
+TRAIN_NGRAM =  "FeatureDifference_GerAV.py"
+TRAIN_PPM = "PPM_AV_GerAV.py"
+TRAIN_ADH = "torched_AdHominem_GerAV.py"
+TRAIN_SBERT = "SiameseBert_GerAV.py"
+OUT = "../results"
 
 
 def disable_wandb(env):
@@ -20,7 +20,7 @@ def run_training(script_path, train_path, test_path, out_path, mode):
     out_path = out_path + os.sep
     env = os.environ.copy()
     disable_wandb(env)
-    env["PYTHONPATH"] = "/home/lotta_kiefer/alias_share/Valla"
+    env["PYTHONPATH"] = "/GerAV/baselines/Valla"
 
     if mode=="ngram":
         cmd = [
@@ -70,9 +70,9 @@ def run_training(script_path, train_path, test_path, out_path, mode):
         print("Stderr:", e.stderr)
 
 def main():
-        train_twitter_path = "/home/lotta_kiefer/alias_share/data/twitter/train.jsonl"
-        test_twitter_path = "/home/lotta_kiefer/alias_share/data/twitter/test.jsonl"
-        val_twitter_path = "/home/lotta_kiefer/alias_share/data/twitter/validation.jsonl"
+        train_twitter_path = "/GerAV/data/twitter/train.jsonl"
+        test_twitter_path = "/GerAV/data/twitter/test.jsonl"
+        val_twitter_path = "/GerAV/data/twitter/validation.jsonl"
         ngram_dir = os.path.join(OUT, "twitter", "ngram")
         ppm_dir = os.path.join(OUT, "twitter", "ppm")
         adh_dir = os.path.join(OUT, "twitter", "adh")

@@ -1,7 +1,6 @@
 """
 This is our pytorch implementation of "https://github.com/boenninghoff/AdHominem"
 """
-#Lotta: compare to normal AdHominem
 import argparse
 
 import torch
@@ -84,7 +83,7 @@ class AdHomDataset(Dataset):
             )
             # TODO: !!!!!!!!!!!! if not using fast text need to set this for test set as well.
         else:
-            self.fasttext = torchtext.vocab.FastText(language='de') #lotta:changed
+            self.fasttext = torchtext.vocab.FastText(language='de') 
             #word_embeddings = fasttext.load_model("valla/utils/cc.de.300.bin")
 
         self.char_vocab_obj = vocab(char_vocab, specials=[self.UNK_TOKEN, self.PAD_TOKEN])
