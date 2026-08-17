@@ -487,17 +487,6 @@ def evaluate_model(test_data, logreg, ppm_order, num_workers, args):
 
     results = av_metrics(true_lbls, probas=probas, threshold=0.5)
 
-def load_train_pairs_from_csv(csv_path): #convert into list
-    pairs = []
-    with open(csv_path, newline='', encoding='utf-8') as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            label = int(row['label'])
-            text1 = row['text1']
-            text2 = row['text2']
-            pairs.append((label, text1, text2))
-    return pairs
-
 
 def main():
     parser = argparse.ArgumentParser(
