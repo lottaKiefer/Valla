@@ -950,15 +950,14 @@ def main(args):
 
     # logging
     logging_steps = args.logging_steps
-    logging_prefix = 'test' if 'test' in args.test_path else 'val'
+    logging_prefix = 'test' if 'test' in args.data_path else 'val'
     # noinspection DuplicatedCode
     save_best_model = args.save_best_model
     save_model_checkpoint = args.save_model_checkpoints
     save_model_dir = args.save_model_dir
 
     # data
-    train_path = args.train_path
-    test_path = args.test_path
+    data_path = args.data_path
     num_dataloader_workers = args.num_dataloader_workers
 
     # training
@@ -998,12 +997,12 @@ def main(args):
 
     # determine the exact char and token vocabularies we want to use based on counts and size
     # get the char and token counts
-    tok_file = tok_file if tok_file is not None else f'{train_path}.adhom.tok_count'
+    tok_file = tok_file if tok_file is not None else f'{data_path}.adhom.tok_count'
     logging.info(f'getting token count file from {tok_file}')
     with open(tok_file, 'r') as tok_counts_file:
         tok_counts = json.load(tok_counts_file)
 
-    chr_file = chr_file if chr_file is not None else f'{train_path}.adhom.chr_count'
+    chr_file = chr_file if chr_file is not None else f'{data_path}.adhom.chr_count'
     logging.info(f'getting character count file from {chr_file}')
     with open(chr_file, 'r') as char_counts_file:
         char_counts = json.load(char_counts_file)
@@ -1033,7 +1032,7 @@ def main(args):
      #                         max_sentences_per_doc=max_sentences_per_doc,
       #                        dont_use_fasttext=dont_use_fasttext)
     # logging.warning(f'!!!!!!!!!!!!! using AV train set for testing!!!!!!!!!!')
-    train_dataset = AVDataset(train_path, "train", char_vocab=char_vocab, tok_vocab=tok_vocab,
+    train_dataset = AVDataset(data_path, "train", char_vocab=char_vocab, tok_vocab=tok_vocab,
                                max_chars_per_word=max_chars_per_word, max_words_per_sentence=max_words_per_sentence,
                                max_sentences_per_doc=max_sentences_per_doc,
                                dont_use_fasttext=dont_use_fasttext)
@@ -1042,7 +1041,7 @@ def main(args):
         logging.info('expecting to evaluate on an AA dataset')
         assert test_batch_size == 1, 'test_batch_size must be 1 to evaluate on an AA dataset'
         # build a dataloader for creating the author profiles
-        auth_profile_dataset = AA_eval_dataset(train_path, char_vocab=char_vocab, tok_vocab=tok_vocab,
+        auth_profile_dataset = AA_eval_dataset(data_path, char_vocab=char_vocab, tok_vocab=tok_vocab,
                                                max_chars_per_word=max_chars_per_word,
                                                max_words_per_sentence=max_words_per_sentence,
                                                max_sentences_per_doc=max_sentences_per_doc,
@@ -1050,14 +1049,14 @@ def main(args):
         auth_profile_dataloader = DataLoader(auth_profile_dataset, batch_size=1, shuffle=False,
                                              num_workers=num_dataloader_workers)
 
-        test_dataset = AA_eval_dataset(test_path, char_vocab=char_vocab, tok_vocab=tok_vocab,
+        test_dataset = AA_eval_dataset(data_path, char_vocab=char_vocab, tok_vocab=tok_vocab,
                                        max_chars_per_word=max_chars_per_word,
                                        max_words_per_sentence=max_words_per_sentence,
                                        max_sentences_per_doc=max_sentences_per_doc,
                                        dont_use_fasttext=dont_use_fasttext)
 
     else:
-        test_dataset = AVDataset(test_path, "test", char_vocab=char_vocab, tok_vocab=tok_vocab,
+        test_dataset = AVDataset(data_path, "validation", char_vocab=char_vocab, tok_vocab=tok_vocab,
                                  max_chars_per_word=max_chars_per_word, max_words_per_sentence=max_words_per_sentence,
                                  max_sentences_per_doc=max_sentences_per_doc,
                                  dont_use_fasttext=dont_use_fasttext)
@@ -1174,13 +1173,12 @@ def main(args):
     logging.info('Done!')
 
 
-def torched_adhom_sweep(config=None, wandb_project=None, device=0, train_path=None, test_path=None):
+def torched_adhom_sweep(config=None, wandb_project=None, device=0, data_path=None):
 
     with wandb.init(config=config):
         config = wandb.config
         config.device = device
-        config.train_path = train_path
-        config.test_path = test_path
+        config.data_path = data_path
         config.wandb_project = wandb_project
         config.model = 'torched_adhom'
         wandb.config.update(config)
@@ -1204,8 +1202,7 @@ if __name__ == '__main__':
     parser.add_argument('--save_model_dir', type=str, default='adhominem_torched')
 
     # data
-    parser.add_argument('--train_path', type=str)
-    parser.add_argument('--test_path', type=str)
+    parser.add_argument('--data_path', type=str)
     parser.add_argument('--num_dataloader_workers', type=int, default=10)
 
     # training

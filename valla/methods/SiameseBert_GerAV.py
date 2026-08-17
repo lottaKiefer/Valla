@@ -203,8 +203,7 @@ def main():
 
     parser.add_argument('--wandb_project', type=str, default='test')
     parser.add_argument('--model_path', type=str, default='bert-base-cased-german')
-    parser.add_argument('--train_path', type=str)
-    parser.add_argument('--test_path', type=str)
+    parser.add_argument('--data_path', type=str)
     parser.add_argument('--output_path', type=str, default='SiameseBert_Twitter')
     parser.add_argument('--epochs', type=int, default=5)
     parser.add_argument('--scheduler', type=str, default='warmuplinear',
@@ -249,15 +248,15 @@ def main():
         run_name = wandb.run.name or "default_run"
 
         if args.which_loss_fn in ['AllTriplet', 'BatchHardTriplet']:
-            train_dataset = AAdataset_triplet(args.train_path)
+            train_dataset = AAdataset_triplet(args.data_path)
         else:
-            train_dataset = AVDataset(args.train_path, "train") 
+            train_dataset = AVDataset(args.data_path, "train") 
 
         if args.AA:
-            test_dataset = get_aa_dataset(args.test_path)
-            train_dset_for_authembs = get_aa_dataset(args.train_path)
+            test_dataset = get_aa_dataset(args.data_path)
+            train_dset_for_authembs = get_aa_dataset(args.data_path)
         else:
-            test_dataset = AVDataset(args.test_path, "test")
+            test_dataset = AVDataset(args.data_path, "validation")
 
         model_args = {'hidden_dropout_prob': args.dropout,
                       'attention_probs_dropout_prob': args.dropout}

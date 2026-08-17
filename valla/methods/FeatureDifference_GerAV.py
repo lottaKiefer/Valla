@@ -712,8 +712,8 @@ def chunker(seq, size):
 
 def main(args):
 
-    train_dataset = load_from_disk(args.train_path)["train"]
-    test_dataset = load_from_disk(args.test_path)["test"]
+    train_dataset = load_from_disk(args.data_path)["train"]
+    test_dataset = load_from_disk(args.data_path)["test"]
 
     train_sz = len(train_dataset)
     test_sz = len(test_dataset)
@@ -842,8 +842,7 @@ def main(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='AdHominem - Siamese Network for Authorship Verification')  
-    parser.add_argument('--train_path', type=str)
-    parser.add_argument('--test_path', type=str)
+    parser.add_argument('--data_path', type=str)
     parser.add_argument('--out_path', type=str)
     parser.add_argument('--project', type=str)
     parser.add_argument('--num_search_iters', type=int, default=2)

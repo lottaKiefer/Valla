@@ -491,8 +491,7 @@ def evaluate_model(test_data, logreg, ppm_order, num_workers, args):
 def main():
     parser = argparse.ArgumentParser(
         description='PAN-21 Cross-domain Authorship Verification task: Baseline Compressor')
-    parser.add_argument('--train_path', type=str, help='Path to the folder containing the pairs.jsonl')
-    parser.add_argument('--test_path', type=str, help='Path to an output folder')
+    parser.add_argument('--data_path', type=str, help='Path to the folder containing the pairs.jsonl')
     parser.add_argument('--cache_path', type=str, default='ppm')
     parser.add_argument('--wandb_project', type=str, default='')
     parser.add_argument('--dset_name', type=str, default='')
@@ -509,9 +508,9 @@ def main():
 
     #with wandb.init(project=args.wandb_project, config=wandb_args):
 
-    train_dataset = get_av_dataset_gerav(args.train_path, "train")
+    train_dataset = get_av_dataset_gerav(args.data_path, "train")
     #changed due to data differnces
-    test_dataset = get_av_dataset_gerav(args.test_path, "test")
+    test_dataset = get_av_dataset_gerav(args.data_path, "test")
 
     train_and_eval_model(train_dataset,
                          test_dataset,
