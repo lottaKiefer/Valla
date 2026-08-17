@@ -27,7 +27,7 @@ from spacy.language import Language
 from spacy.lang.en import English
 import textacy.preprocessing as tp
 from valla.utils.eval_metrics import av_metrics, aa_metrics
-from valla.dsets.loaders import get_av_dataset, get_aa_dataset, get_av_dataset_json
+from valla.dsets.loaders import get_av_dataset, get_aa_dataset, get_av_dataset_gerav
 from valla.utils.dataset_utils import list_dset_to_dict
 import torch.multiprocessing
 torch.multiprocessing.set_sharing_strategy('file_system')
@@ -332,13 +332,13 @@ class AVDataset(AdHomDataset):
        # self.data = get_av_dataset_json(data_path)
 
         #self.data_len = len(self.data)
-    def __init__(self, data_path=None, input_list=None, *args, **kwargs):
+    def __init__(self, data_path=None, split=None, input_list=None, *args, **kwargs):
         super(AVDataset, self).__init__(*args, **kwargs)
         self.data = []
         if input_list is not None:
             self.data = input_list
         elif data_path is not None:
-            self.data = get_av_dataset_json(data_path)
+            self.data = get_av_dataset_gerav(data_path, split)
 
         self.data_len = len(self.data)
     def __len__(self):
@@ -1033,7 +1033,7 @@ def main(args):
      #                         max_sentences_per_doc=max_sentences_per_doc,
       #                        dont_use_fasttext=dont_use_fasttext)
     # logging.warning(f'!!!!!!!!!!!!! using AV train set for testing!!!!!!!!!!')
-    train_dataset = AVDataset(train_path, char_vocab=char_vocab, tok_vocab=tok_vocab,
+    train_dataset = AVDataset(train_path, "train", char_vocab=char_vocab, tok_vocab=tok_vocab,
                                max_chars_per_word=max_chars_per_word, max_words_per_sentence=max_words_per_sentence,
                                max_sentences_per_doc=max_sentences_per_doc,
                                dont_use_fasttext=dont_use_fasttext)
@@ -1057,7 +1057,7 @@ def main(args):
                                        dont_use_fasttext=dont_use_fasttext)
 
     else:
-        test_dataset = AVDataset(test_path, char_vocab=char_vocab, tok_vocab=tok_vocab,
+        test_dataset = AVDataset(test_path, "test", char_vocab=char_vocab, tok_vocab=tok_vocab,
                                  max_chars_per_word=max_chars_per_word, max_words_per_sentence=max_words_per_sentence,
                                  max_sentences_per_doc=max_sentences_per_doc,
                                  dont_use_fasttext=dont_use_fasttext)

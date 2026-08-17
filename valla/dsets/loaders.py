@@ -4,6 +4,7 @@ import pandas as pd
 from typing import List, Union
 import sys
 import csv
+from datasets import load_from_disk
 
 # kinda dirty but need for PAN20 - I don't really wanna chop data or something
 csv.field_size_limit(sys.maxsize)
@@ -35,6 +36,24 @@ def get_av_dataset(dataset_path: str) -> List[List[Union[int, str, str]]]:
             if i > 0:  # skip header
                 data.append([int(line[0]), str(line[1]), str(line[2])])
     return data
+
+    def get_av_dataset_gerav(
+        dataset_path: str,
+        split: str,
+    ) -> List[List[Union[int, str, str]]]:
+
+        dataset = load_from_disk(dataset_path)[split]
+
+        data = []
+
+        for obj in dataset:
+            label = int(obj["label"])
+            text_a = obj["post_a"]["text"]
+            text_b = obj["post_b"]["text"]
+
+            data.append([label, text_a, text_b])
+
+        return data
 
 
 def get_aa_as_pandas(dataset_path: str) -> pd.DataFrame:

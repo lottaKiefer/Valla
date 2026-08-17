@@ -30,12 +30,12 @@ import spacy
 nlp = spacy.load("de_core_news_lg")
 from nltk.corpus import stopwords
 import argparse
-import csv
+from tqdm import tqdm
 import wandb
 import json
 import valla.utils.eval_metrics
 from valla.utils.misspelt_words_feature import MisspellingsFeatureTransformer
-from valla.dsets.loaders import get_av_dataset
+from datasets import load_from_disk
 from collections import defaultdict
 from sklearn.metrics import roc_curve, auc
 
@@ -615,111 +615,93 @@ def get_transformer(selected_featuresets=None, char_n=3):
     return transformer
 
 
-def fit_transformers(data, char_n=3):  #, data_fraction=0.01):
-    # docs_2 = []
-
-    # with open(PREPROCESSED_DATA_PATH + 'preprocessed_train.jsonl', 'r') as f:
-    #     for l in tqdm(f):
-    #         if np.random.rand() < data_fraction:
-    #             d = json.loads(l)
-    #             docs_1.append(d['pair'][0])
-    #             docs_2.append(d['pair'][1])
+def fit_transformers(dataset, char_n=3):
 
     transformer = get_transformer(char_n=char_n)
     scaler = StandardScaler()
     secondary_scaler = StandardScaler()
 
-    X = transformer.fit_transform(data).toarray() #todense()  # docs_1 + docs_2).todense()
-    X = scaler.fit_transform(np.asarray(X))  #X = scaler.fit_transform(X) because numpy is newer
-    X1 = X[:int(len(X)/2)]
-    X2 = X[int(len(X)/2):]
+    # Extract texts from pairs
+    docs = []
+    docs1 = []
+    docs2 = []
+
+    for example in dataset:
+        text1 = example["post_a"]["text"]
+        text2 = example["post_b"]["text"]
+
+        docs.append(text1)
+        docs.append(text2)
+
+        docs1.append(text1)
+        docs2.append(text2)
+
+    # Fit transformer and primary scaler on all individual texts
+    X = transformer.fit_transform(docs).toarray()
+    X = scaler.fit_transform(X)
+
+    # Recover A/B representations
+    X1 = X[0::2]
+    X2 = X[1::2]
+
+    # Fit secondary scaler on pairwise feature differences
     secondary_scaler.fit(np.abs(X1 - X2))
 
     return transformer, scaler, secondary_scaler
 
 
-def vectorize(XX, Y, ordered_idxs, transformer, scaler, secondary_scaler, preprocessed_path, vector_Sz, eval=False):
+def vectorize(XX, Y, ordered_idxs, transformer, scaler, secondary_scaler, dataset, vector_Sz, eval=False):
     batch_size = 10000
-    i = 0
+
     docs1 = []
     docs2 = []
     idxs = []
     labels = []
 
-    if isinstance(preprocessed_path, list):
-        rows = preprocessed_path
-        for l in tqdm(rows, total=vector_Sz):
-            label, doc1, doc2 = l
-            labels.append(int(label))
-            docs1.append(doc1)
-            docs2.append(doc2)
-            idxs.append(ordered_idxs[i])
-            i+=1
-            if len(labels) >= batch_size:
-                x1 = scaler.transform(transformer.transform(docs1).toarray())
-                x2 = scaler.transform(transformer.transform(docs2).toarray())
-                XX[idxs, :] = secondary_scaler.transform(np.abs(x1 - x2))
-                Y[idxs] = labels
-                docs1 = []
-                docs2 = []
-                idxs = []
-                labels = []
+    for i, example in enumerate(tqdm(dataset, total=vector_Sz)):
 
-    elif preprocessed_path.endswith('.jsonl'):
-        with open(preprocessed_path, 'r') as f:
-            for l in tqdm(f, total=vector_Sz):
-                l = l.strip()
-                obj = json.loads(l)
-                text1 = obj["post_a"]["text"]
-                text2 = obj["post_b"]["text"]
-                label = int(obj["label"])
-                docs1.append(text1)
-                docs2.append(text2)
-                labels.append(label)
-                idxs.append(ordered_idxs[i])
-                i += 1
+        text1 = example["post_a"]["text"]
+        text2 = example["post_b"]["text"]
+        label = int(example["label"])
 
-                if len(labels) >= batch_size:
-                    print("doc1", len(docs1))
-                    x1 = scaler.transform(transformer.transform(docs1).toarray())  # todense())
-                    x2 = scaler.transform(transformer.transform(docs2).toarray())  # todense())
-                    XX[idxs, :] = secondary_scaler.transform(np.abs(x1 - x2))
-                    Y[idxs] = labels
+        docs1.append(text1)
+        docs2.append(text2)
+        labels.append(label)
+        idxs.append(ordered_idxs[i])
 
-                    docs1 = []
-                    docs2 = []
-                    idxs = []
-                    labels = []
+        if len(labels) >= batch_size:
+            x1 = scaler.transform(
+                transformer.transform(docs1).toarray()
+            )
+            x2 = scaler.transform(
+                transformer.transform(docs2).toarray()
+            )
 
-    else:
-        with open(preprocessed_path, 'r') as f:
-            reader = csv.reader(f)
-            for line in tqdm(reader, total=vector_Sz):
-                label = int (line[0])
-                text1 = int (line[1])
-                text2 = int (line[2])
-                docs1.append(text1)
-                docs2.append(text2)
-                labels.append(label)
-                idxs.append(ordered_idxs[i])
-                i += 1
-                if len(labels) >= batch_size:
-                    x1 = scaler.transform(transformer.transform(docs1).toarray())
-                    x2 = scaler.transform(transformer.transform(docs2).toarray())
-                    XX[idxs, :] = secondary_scaler.transform(np.abs(x1 - x2))
-                    Y[idxs] = labels
-                    docs1 = []
-                    docs2 = []
-                    idxs = []
-                    labels = []
-    
-    print(len(docs1), len(labels), len(docs2))
-    if len(docs1)>0:
-        x1 = scaler.transform(transformer.transform(docs1).toarray()) #todense())
-        x2 = scaler.transform(transformer.transform(docs2).toarray()) #todense())
-        XX[idxs, :] = secondary_scaler.transform(np.abs(x1 - x2))
+            XX[idxs, :] = secondary_scaler.transform(
+                np.abs(x1 - x2)
+            )
+            Y[idxs] = labels
+
+            docs1 = []
+            docs2 = []
+            idxs = []
+            labels = []
+
+    # Process remaining examples
+    if len(docs1) > 0:
+        x1 = scaler.transform(
+            transformer.transform(docs1).toarray()
+        )
+        x2 = scaler.transform(
+            transformer.transform(docs2).toarray()
+        )
+
+        XX[idxs, :] = secondary_scaler.transform(
+            np.abs(x1 - x2)
+        )
         Y[idxs] = labels
-    if eval==False:
+
+    if not eval:
         XX.flush()
         Y.flush()
 
@@ -730,36 +712,19 @@ def chunker(seq, size):
 
 def main(args):
 
-    train_sz, test_sz = 0, 0
+    train_dataset = load_from_disk(args.train_path)["train"]
+    test_dataset = load_from_disk(args.test_path)["test"]
 
-    train_raw_texts = []
+    train_sz = len(train_dataset)
+    test_sz = len(test_dataset)
 
-    if args.train_path.endswith('jsonl'):
-        with open(args.train_path, 'r') as f:
-            for line in f:
-                line = line.strip()
-                obj = json.loads(line)
-                text_a = obj["post_a"]["text"]
-                text_b = obj['post_b']['text']
-                train_raw_texts.append(text_a)
-                train_raw_texts.append(text_b)
-                train_sz += 1
-    else:
-        with open(args.train_path, 'r') as f:
-            reader = csv.reader(f)
-            for _, ppt0, ppt1 in reader:
-                train_raw_texts.append(json.loads(ppt0))
-                train_raw_texts.append(json.loads(ppt1))
-                train_sz += 1
-
-    with open(args.test_path, 'r') as f:
-        for _ in f:
-            test_sz += 1
+    print(f"Train samples: {train_sz}")
+    print(f"Test samples: {test_sz}")
 
 
     print('Fitting transformer...', flush=True)
     start_time = time.time()
-    transformer, scaler, secondary_scaler = fit_transformers(train_raw_texts, char_n=args.char_n)
+    transformer, scaler, secondary_scaler = fit_transformers(train_dataset, char_n=args.char_n)
     print(f'took {(time.time() - start_time)/60} seconds')
     feature_sz = len(transformer.get_feature_names_out())
 
@@ -781,7 +746,7 @@ def main(args):
         transformer,
         scaler,
         secondary_scaler,
-        args.train_path,
+        train_dataset,
         train_sz
     )
 
@@ -798,7 +763,7 @@ def main(args):
         transformer,
         scaler,
         secondary_scaler,
-        args.test_path,
+        test_dataset,
         test_sz
     )
 
@@ -876,7 +841,7 @@ def main(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
-        description='AdHominem - Siamese Network for Authorship Verification') 
+        description='AdHominem - Siamese Network for Authorship Verification')  
     parser.add_argument('--train_path', type=str)
     parser.add_argument('--test_path', type=str)
     parser.add_argument('--out_path', type=str)
@@ -888,10 +853,4 @@ if __name__ == '__main__':
     with wandb.init(config=vars(args), project=args.project):
         main(args)
     TEMP_DATA_PATH = args.out_path
-
-''' 
-python valla/methods/FeatureDifferenceGerman.py \
---train_path  /home/kiefer/alias_share/twitter/twitter_new/train.jsonl \
---test_path /home/kiefer/alias_share/twitter/twitter_new/test.jsonl \
---out_path twitter/ngram/ 
-'''
+    

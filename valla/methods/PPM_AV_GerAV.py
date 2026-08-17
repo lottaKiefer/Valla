@@ -55,7 +55,7 @@ from sklearn.linear_model import LogisticRegression
 from typing import Dict
 import logging
 from valla.utils.eval_metrics import av_metrics
-from valla.dsets.loaders import get_av_dataset, get_av_dataset_json
+from valla.dsets.loaders import get_av_dataset, get_av_dataset_gerav
 from valla.utils.dataset_utils import list_dset_to_dict
 import wandb
 from multiprocessing import Pool
@@ -504,7 +504,7 @@ def main():
         description='PAN-21 Cross-domain Authorship Verification task: Baseline Compressor')
     parser.add_argument('--train_path', type=str, help='Path to the folder containing the pairs.jsonl')
     parser.add_argument('--test_path', type=str, help='Path to an output folder')
-    parser.add_argument('--cache_path', type=str, default='sky_min300')
+    parser.add_argument('--cache_path', type=str, default='ppm')
     parser.add_argument('--wandb_project', type=str, default='')
     parser.add_argument('--dset_name', type=str, default='')
     parser.add_argument('--ppm_order', type=int, default=5)
@@ -520,9 +520,9 @@ def main():
 
     #with wandb.init(project=args.wandb_project, config=wandb_args):
 
-    train_dataset = get_av_dataset_json(args.train_path) #list_dset_to_dict(get_aa_dataset(args.train_path)) 
+    train_dataset = get_av_dataset_gerav(args.train_path, "train")
     #changed due to data differnces
-    test_dataset = get_av_dataset_json(args.test_path)
+    test_dataset = get_av_dataset_gerav(args.test_path, "test")
 
     train_and_eval_model(train_dataset,
                          test_dataset,

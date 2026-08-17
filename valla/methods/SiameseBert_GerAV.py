@@ -8,7 +8,7 @@ from sentence_transformers.losses.BatchHardTripletLoss import BatchHardTripletLo
 from sentence_transformers.losses.ContrastiveLoss import SiameseDistanceMetric
 from sentence_transformers.losses import BatchAllTripletLoss, BatchHardTripletLoss
 from valla.utils.Losses import ModifiedContrastiveLoss, MyContrastiveLoss
-from valla.dsets.loaders import get_av_dataset, get_aa_dataset, get_av_dataset_json
+from valla.dsets.loaders import get_av_dataset, get_aa_dataset, get_av_dataset_gerav
 from valla.utils.dataset_utils import list_dset_to_dict
 from transformers import AutoConfig, AutoModel
 from sentence_transformers.models import Transformer
@@ -154,11 +154,11 @@ def get_random_substring(txt, substr_len=512*5):
 
 class AVDataset(Dataset):
 
-    def __init__(self, data_path):
+    def __init__(self, data_path, split):
         # , char_vocab=None, tok_vocab=None, char_to_id=None, tok_to_id=None, **kwargs):
         super(AVDataset, self).__init__()  # char_vocab, tok_vocab, char_to_id, tok_to_id, **kwargs)
 
-        _data = get_av_dataset_json(data_path)
+        _data = get_av_dataset_gerav(data_path, split)
         self.data = []
         self.raw_data = []
         for label, text0, text1 in _data:
@@ -251,13 +251,13 @@ def main():
         if args.which_loss_fn in ['AllTriplet', 'BatchHardTriplet']:
             train_dataset = AAdataset_triplet(args.train_path)
         else:
-            train_dataset = AVDataset(args.train_path) #AADataset(args.train_path, true_hard_negatives=args.true_hard_negatives)
+            train_dataset = AVDataset(args.train_path, "train") 
 
         if args.AA:
             test_dataset = get_aa_dataset(args.test_path)
             train_dset_for_authembs = get_aa_dataset(args.train_path)
         else:
-            test_dataset = AVDataset(args.test_path)
+            test_dataset = AVDataset(args.test_path, "test")
 
         model_args = {'hidden_dropout_prob': args.dropout,
                       'attention_probs_dropout_prob': args.dropout}
