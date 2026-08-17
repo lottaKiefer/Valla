@@ -1,12 +1,13 @@
 import os
 import subprocess
 
-NEW_ROOT = "reddit"
-TRAIN_NGRAM =  "FeatureDifference_GerAV.py"
-TRAIN_PPM = "PPM_AV_GerAV.py"
-TRAIN_ADH = "torched_AdHominem_GerAV.py"
-TRAIN_SBERT = "SiameseBert_GerAV.py"
-OUT = "../results"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+TRAIN_NGRAM = os.path.join(BASE_DIR, "FeatureDifference_GerAV.py")
+TRAIN_PPM = os.path.join(BASE_DIR, "PPM_AV_GerAV.py")
+TRAIN_ADH = os.path.join(BASE_DIR, "torched_AdHominem_GerAV.py")
+TRAIN_SBERT = os.path.join(BASE_DIR, "SiameseBert_GerAV.py")
+OUT = os.path.join(BASE_DIR, "..", "results")
 
 
 def disable_wandb(env):
@@ -16,7 +17,6 @@ def disable_wandb(env):
     env["WANDB_DISABLED"] = "true"
 
 def run_training(script_path, train_path, test_path, out_path, mode):
-    script_dir = os.path.dirname(os.path.abspath(script_path))
     out_path = out_path + os.sep
     env = os.environ.copy()
     disable_wandb(env)
@@ -30,7 +30,7 @@ def run_training(script_path, train_path, test_path, out_path, mode):
             "--test_path", test_path,
             "--out_path", out_path
         ]
-    if mode=="ppm":
+    elif mode=="ppm":
         cmd = [
             "python",
             script_path,
@@ -39,7 +39,7 @@ def run_training(script_path, train_path, test_path, out_path, mode):
             "--cache_path", out_path,
             "--dset_name", "ppm"
         ]
-    if mode=="adh":
+    elif mode=="adh":
         cmd = [
             "python",
             script_path,
@@ -48,7 +48,7 @@ def run_training(script_path, train_path, test_path, out_path, mode):
             "--save_model_dir", out_path,
             "--dont_use_fasttext"
         ]
-    if mode=="sbert":
+    elif mode=="sbert":
         cmd = [
             "python",
             script_path,
@@ -57,12 +57,16 @@ def run_training(script_path, train_path, test_path, out_path, mode):
             "--output_path", out_path,
         ]
 
-    print(f"Running: {' '.join(cmd)} (PYTHONPATH={script_dir})")
+    else:
+        raise ValueError(f"Unknown mode: {mode}")
+
+    print(f"Running: {' '.join(cmd)} (PYTHONPATH={env['PYTHONPATH']})")
     try:
         result = subprocess.run(
             cmd,
-            capture_output=True,
-            text=True, check=True, env=env
+            text=True,
+            check=True,
+            env=env
         )
     except subprocess.CalledProcessError as e:
         print("Error")
@@ -70,22 +74,39 @@ def run_training(script_path, train_path, test_path, out_path, mode):
         print("Stderr:", e.stderr)
 
 def main():
-        train_twitter_path = "/GerAV/data/twitter/train.jsonl"
-        test_twitter_path = "/GerAV/data/twitter/test.jsonl"
-        val_twitter_path = "/GerAV/data/twitter/validation.jsonl"
-        ngram_dir = os.path.join(OUT, "twitter", "ngram")
-        ppm_dir = os.path.join(OUT, "twitter", "ppm")
-        adh_dir = os.path.join(OUT, "twitter", "adh")
-        sbert_dir = os.path.join(OUT, "twitter_new", "sbert")
-        os.makedirs(ngram_dir, exist_ok=True)
-        os.makedirs(ppm_dir, exist_ok=True)
-        os.makedirs(adh_dir, exist_ok=True)
-        os.makedirs(sbert_dir, exist_ok=True)
-        run_training(TRAIN_NGRAM, train_twitter_path, test_twitter_path, ngram_dir, "ngram")
-        run_training(TRAIN_PPM, train_twitter_path, test_twitter_path, ppm_dir, "ppm")
-        run_training(TRAIN_ADH, train_twitter_path, val_twitter_path, adh_dir, "adh")
-        run_training(TRAIN_SBERT, train_twitter_path, val_twitter_path, sbert_dir, "sbert")
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--data_path", required=True, help="Path to the dataset")
+    parser.add_argument("--new_root", required=True, help="Name of the dataset, e.g. twitter, profile-based")
+    parser.add_argument("--models", nargs="+", choices=["ppm", "ngram", "adh", "sbert"], required=True, help="Models to run")
+    args = parser.parse_args()
 
+    data_path = args.data_path
+    new_root = args.new_root
+
+    model_dirs = {
+        "ngram": os.path.join(OUT, new_root, "ngram"),
+        "ppm": os.path.join(OUT, new_root, "ppm"),
+        "adh": os.path.join(OUT, new_root, "adh"),
+        "sbert": os.path.join(OUT, new_root, "sbert"),
+    }
+
+    model_scripts = {
+        "ngram": TRAIN_NGRAM,
+        "ppm": TRAIN_PPM,
+        "adh": TRAIN_ADH,
+        "sbert": TRAIN_SBERT,
+    }
+
+    for model in args.models:
+        out_dir = model_dirs[model]
+        os.makedirs(out_dir, exist_ok=True)
+
+        run_training(
+            model_scripts[model],
+            data_path,
+            out_dir,
+            model
+        )
 
 if __name__ == "__main__":
     main()
