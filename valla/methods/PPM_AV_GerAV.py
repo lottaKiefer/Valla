@@ -41,7 +41,7 @@ Adapted from: https://github.com/pan-webis-de/pan-code/tree/master/clef21/author
 
 from __future__ import print_function
 import sys
-sys.path.append("/home/Kiefer/alias_share/Valla")
+sys.path.append("/GerAV/baselines/Valla")
 
 import pickle
 from math import log

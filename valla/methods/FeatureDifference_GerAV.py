@@ -22,8 +22,6 @@ from itertools import chain
 from nltk.tag.perceptron import PerceptronTagger
 from nltk.corpus import conll2000
 import nltk
-#nltk.download('averaged_perceptron_tagger_eng')
-#nltk.data.path.append('/home/kiefer/nltk_data')
 import nltk.data
 import itertools
 import spacy
